@@ -2,10 +2,10 @@ import commands
 import os
 import shutil
 import tempfile
-from flask_babelex import gettext
+from flask.ext.babelex import gettext
 from transliterate import translit
 from app import app
-
+from shell import ex
 config = app.config
 
 
@@ -20,7 +20,7 @@ def _cli_command(cmd):
     if status != 0:
         raise Exception(output)
     return output
-    
+
 
 
 def confbridge_list():
@@ -35,6 +35,12 @@ def confbridge_list():
 
 def confbridge_list_participants(confno):
     output = _cli_command('confbridge list %s' % confno)
+
+    #getting peer's name for participant's conference button
+    def get_calleridname(peernum):
+        calleridname = (ex("asterisk -rx 'sip show peer %s'" % peernum) | "grep Callerid" | "awk '{print $3}'").stdout()
+        return calleridname.replace('"','')
+
     if 'No conference' in output:
         return []
     participants = []
@@ -49,29 +55,29 @@ def confbridge_list_participants(confno):
             # ['Channel', 'User', 'Profile', 'Bridge', 'Profile', 'Menu', 'CallerID']
             if len(line) == 3:
                 # User Profile and Bridge Profile are empty as it should be.
-                callerid = line[2]
+                callerid = "%s %s" % (get_calleridname(line[2]), line[2])
         elif len(header) == 8 and header[7] == 'Muted':
             # ['Channel', 'User', 'Profile', 'Bridge', 'Profile', 'Menu', 'CallerID', 'Muted']
             if len(line) == 4:
                 # User Profile and Bridge Profile are empty as it should be.
-                callerid = line[2]
+                callerid = "%s %s" % (get_calleridname(line[2]), line[2])
                 flags = 'm' if line[3] == 'Yes' else ''
         elif len(header) == 8 and header[1] == 'Flags':
             # ['Channel', 'Flags', User', 'Profile', 'Bridge', 'Profile', 'Menu', 'CallerID']
             if len(line) == 3:
                 # No flags no default profiles
-                callerid = line[2]
+                callerid = "%s %s" % (get_calleridname(line[2]), line[2])
             elif len(line) == 4:
                 # Flags are set default profiles not set
                 flags = line[1]
-                callerid = line[3]
+                callerid = "%s %s" % (get_calleridname(line[3]), line[3])
             elif len(line) == 5:
                 # Flags are not set and default profiles are set
-                callerid = line[4]
+                callerid = "%s %s" % (get_calleridname(line[4]), line[4])
             elif len(line) == 6:
                 # Flags are set and default profiles also set
                 flags = line[1]
-                callerid = line[5]
+                callerid = "%s %s" % (get_calleridname(line[5]), line[5])
 
         participants.append({
                 'channel': channel,
@@ -174,7 +180,7 @@ def confbridge_lock(confno):
 
 def confbridge_unlock(confno):
     return _cli_command('confbridge unlock %s' % confno)
-    
+
 
 def confbridge_record_start(confno):
     return _cli_command('confbridge record start %s' % confno)

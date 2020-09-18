@@ -21,3 +21,4 @@ python-crontab
 pytz
 speaklater
 email_validator
+shell.py
