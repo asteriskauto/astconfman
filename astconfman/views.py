@@ -586,7 +586,7 @@ class ParticipantProfileAdmin(ModelView, AuthBaseView):
                 'startmuted',
                 'quiet',
                 'wait_marked',
-                'end_marked',            
+                'end_marked',
                 'music_on_hold_when_empty',
                 'music_on_hold_class',
             ),
@@ -883,6 +883,10 @@ def invite_all(conf_number, callerid):
         user_options=p.profile.get_confbridge_options())
     return 'OK'
 
+#getting calleridname for conference log
+def get_calleridname(peernum):
+    calleridname = (ex("asterisk -rx 'sip show peer %s'" % peernum) | "grep Callerid" | "awk '{print $3}'").stdout()
+    return calleridname.replace('"','')
 
 @asterisk.route('/checkconf/<conf_number>/<callerid>')
 def check(conf_number, callerid):
@@ -895,8 +899,8 @@ def check(conf_number, callerid):
 
     elif callerid not in [
             k.phone for k in conf.participants] and not conf.is_public:
-        message = gettext('Attempt to enter non-public conference from %(phone)s.',
-                    phone=callerid)
+        message = gettext('Attempt to enter non-public conference from %(phone)s %(calleridname)s.',
+                    phone=callerid, calleridname=get_calleridname(callerid))
         conf.log(message)
         return 'NOTPUBLIC'
 
@@ -936,8 +940,8 @@ def user_profile(conf_number, callerid):
 def dial_status(conf_number, callerid, status):
     if not asterisk_is_authenticated():
         return 'NOTAUTH'
-    message = gettext('Could not invite number %(num)s: %(status)s', num=callerid,
-                status=status.capitalize())
+    message = gettext('Could not invite  %(calleridname)s %(num)s: %(status)s', num=callerid,
+                status=status.capitalize(), calleridname=get_calleridname(callerid))
     conference = Conference.query.filter_by(number=conf_number).first_or_404()
     conference.log(message)
     return 'OK'
@@ -947,7 +951,7 @@ def dial_status(conf_number, callerid, status):
 def enter_conference(conf_number, callerid):
     if not asterisk_is_authenticated():
         return 'NOTAUTH'
-    message = gettext('Number %(num)s has entered the conference.', num=callerid)
+    message = gettext('%(calleridname)s %(num)s has entered the conference.', num=callerid, calleridname=get_calleridname(callerid))
     conference = Conference.query.filter_by(number=conf_number).first_or_404()
     conference.log(message)
     sse_notify(conference.id, 'update_participants')
@@ -957,7 +961,7 @@ def enter_conference(conf_number, callerid):
 def leave_conference(conf_number, callerid):
     if not asterisk_is_authenticated():
         return 'NOTAUTH'
-    message = gettext('Number %(num)s has left the conference.', num=callerid)
+    message = gettext('%(calleridname)s %(num)s has left the conference.', num=callerid, calleridname=get_calleridname(callerid))
     conference = Conference.query.filter_by(number=conf_number).first_or_404()
     conference.log(message)
     sse_notify(conference.id, 'update_participants')
@@ -968,7 +972,7 @@ def leave_conference(conf_number, callerid):
 def unmute_request(conf_number, callerid):
     if not asterisk_is_authenticated():
         return 'NOTAUTH'
-    message = gettext('Unmute request from number %(num)s.', num=callerid)
+    message = gettext('Unmute request from %(calleridname)s %(num)s.', num=callerid, calleridname=get_calleridname(callerid))
     conference = Conference.query.filter_by(number=conf_number).first_or_404()
     conference.log(message)
     sse_notify(conference.id, 'unmute_request', callerid)
