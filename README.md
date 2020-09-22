@@ -165,3 +165,6 @@ drwx------ 2 syslog   adm      4096 дек.   4  2013 rsyslog
 (env)max@linux:~/astconfman/astconfman$
 ```
 To fix it add user running astwebconf to asterisk group.
+
+
+### add to cron: */2 * * * * /usr/bin/sqlite3 /etc/asterisk/astconfman/astconfman.db 'select name, phone from contact' > /etc/asterisk/astconfman_contacts

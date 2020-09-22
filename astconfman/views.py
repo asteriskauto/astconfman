@@ -885,8 +885,8 @@ def invite_all(conf_number, callerid):
 
 #getting calleridname for conference log
 def get_calleridname(peernum):
-    calleridname = (ex("asterisk -rx 'sip show peer %s'" % peernum) | "grep Callerid" | "awk '{print $3}'").stdout()
-    return calleridname.replace('"','')
+    calleridname = (ex("cat /etc/asterisk/astconfman_contacts") | "grep %s" peernum | " awk -F'|' '{print $1}'").stdout()
+    return calleridname.replace(' ','_')
 
 @asterisk.route('/checkconf/<conf_number>/<callerid>')
 def check(conf_number, callerid):
