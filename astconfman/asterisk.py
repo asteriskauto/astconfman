@@ -38,8 +38,8 @@ def confbridge_list_participants(confno):
 
     #getting peer's name for participant's conference button
     def get_calleridname(peernum):
-        calleridname = (ex("cat /etc/asterisk/astconfman_contacts") | "grep %s" peernum | " awk -F'|' '{print $1}'").stdout()
-        return calleridname.replace(' ','_')
+        calleridname = (ex("cat /etc/asterisk/astconfman_contacts") | "grep %s" % peernum | " awk -F '|' '{print $1}'").stdout()
+        return calleridname.decode('utf-8')
 
     if 'No conference' in output:
         return []
